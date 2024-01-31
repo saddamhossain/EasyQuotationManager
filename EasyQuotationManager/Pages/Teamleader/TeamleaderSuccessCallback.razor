@@ -1,0 +1,85 @@
+﻿@page "/authorize/teamleaderSuccessCallback"
+@using Microsoft.AspNetCore.WebUtilities;
+@attribute [Authorize]
+
+<div class="mt-5"></div>
+@if (isSuccess)
+{
+    <PageTitle Title="Teamleader Success Callback" />
+    <MudText Typo="Typo.h5" Color="MudBlazor.Color.Primary" Class="mb-4">Successfully Authorized!</MudText>
+}
+else
+{
+    <MudText Typo="Typo.h5" Color="MudBlazor.Color.Warning" Class="mb-4">You are not Authorized yet. Please contact with Administrator!</MudText>
+}
+
+@code {
+    private string currentLoggedInUserName;
+    private string currentLoggedInUserFullName;
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+    private ApplicationUser userInfo;
+    private bool isSuccess = false;
+    private string userId;
+    private string code;
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentLoggedInUserName = user.Identity.Name;
+            claims = user.Claims;
+            var userDetails = await _userManager.FindByNameAsync(currentLoggedInUserName);
+            userInfo = await _IApplicationUserRepository.GetUserInfo(userDetails.Id);
+            currentLoggedInUserFullName = $"{userInfo.FirstName} {userInfo.LastName}";
+        }
+        else
+        {
+            currentLoggedInUserName = "UnKnown";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        var uri = _NavigationManager.ToAbsoluteUri(_NavigationManager.Uri);
+        var code = QueryHelpers.ParseQuery(uri.Query).TryGetValue("code", out var type) ? type.First() : "";
+        await UpdateTeamLeaderAuthCode(userId, code);
+    }
+
+    private async Task UpdateTeamLeaderAuthCode(string userId, string code)
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(code) && userInfo != null)
+            {
+                isSuccess = await _IApplicationUserRepository.UpdateTeamLeaderAuthCode(userInfo.Id, code);
+                if (isSuccess)
+                {
+                    return;
+                }
+                else
+                {
+                    SnackbarControl("Somewthing Went Wrong With the Operation", Severity.Error, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            SnackbarControl(ex.Message.ToString(), Severity.Warning, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+        }
+    }
+
+    void SnackbarControl(string message, Severity severity, string position, Variant variant)
+    {
+        _ISnackbar.Clear();
+        _ISnackbar.Configuration.PositionClass = position;
+        _ISnackbar.Configuration.SnackbarVariant = variant;
+        _ISnackbar.Add(message, severity, config =>
+        {
+            config.ShowCloseIcon = true;
+        });
+    }
+
+}

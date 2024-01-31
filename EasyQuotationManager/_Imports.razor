@@ -1,0 +1,51 @@
+﻿@using System.Net.Http
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.JSInterop
+@using System.Net
+@using Microsoft.Extensions.Options
+@using Microsoft.AspNetCore.Hosting
+@using Microsoft.AspNetCore.Mvc.ViewEngines
+@using System.Security.Claims
+@using System.IO
+@using Blazored.FluentValidation
+@inject Microsoft.Extensions.Configuration.IConfiguration _IConfiguration
+
+@using EasyQuotationManager
+@using EasyQuotationManager.Model
+@using EasyQuotationManager.Model.ApiModels.Product
+@using EasyQuotationManager.Model.ApiModels.Contact
+@using EasyQuotationManager.Model.ApiModels.Company
+@using EasyQuotationManager.Model.ApiModels.Quotation
+@using EasyQuotationManager.Repository.IRepository
+@using EasyQuotationManager.Shared
+@using EasyQuotationManager.Shared.Utility
+@using EasyQuotationManager.Shared.Constant
+@using EasyQuotationManager.Shared.Enums
+@using EasyQuotationManager.Shared.ViewModels
+
+@using MudBlazor
+@inject IDialogService _IDialogService
+
+@inject IWebHostEnvironment Environment
+@inject ICompositeViewEngine Engine
+
+@inject IJSRuntime _IJSRuntime
+@inject NavigationManager _NavigationManager
+@inject ISnackbar _ISnackbar
+@inject AuthenticationStateProvider _AuthenticationStateProvider
+
+@inject Microsoft.AspNetCore.Identity.UserManager<Microsoft.AspNetCore.Identity.IdentityUser> _userManager
+@inject IInternalLogRepository _IInternalLogRepository
+@inject IAuditLogRepository _IAuditLogRepository
+@inject IRoleRepository _IRoleRepository
+@inject IApplicationUserRepository _IApplicationUserRepository
+@inject ITokenRepository _ITokenRepository
+@inject IProductRepository _IProductRepository
+@inject IContactRepository _IContactRepository
+@inject ICompanyRepository _ICompanyRepository
+@inject IQuotationRepository _IQuotationRepository

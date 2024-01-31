@@ -1,0 +1,101 @@
+﻿@page "/role/index"
+@attribute [Authorize]
+
+<PageTitle Title="Roles" />
+<MudText Typo="Typo.h5" Color="MudBlazor.Color.Primary" Class="mb-4">Roles</MudText>
+
+@if (IsLoading)
+{
+    <Loading />
+}
+else if (!models.Any())
+{
+    <div class="row">
+        <div class="col-md-4">
+            <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Create" Size="MudBlazor.Size.Small" Color="MudBlazor.Color.Primary" @onclick="Create">Create Role</MudButton>
+        </div>
+    </div>
+    <RecordNotFoundMessage Message="No Records Found." />
+}
+else
+{ 
+    <div class="row">
+        <div class="col-md-4">
+            <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Create" Size="MudBlazor.Size.Small" Color="MudBlazor.Color.Primary" @onclick="Create">Create Role</MudButton>
+        </div>
+    </div>
+    <MudTable Items="models"
+              Dense="@dense"
+              Hover="@hover"
+              Striped="@striped"
+              Bordered="@bordered"
+              Virtualize="true"
+              FixedHeader="@fixed_header"
+              Breakpoint="Breakpoint.Sm"
+              @ref="table"
+              SortLabel="Sort By">
+        <HeaderContent>
+            <MudTh> Role Name</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Role Name">@context.NormalizedName </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>No matching records found</MudText>
+        </NoRecordsContent>
+        <LoadingContent>
+            <MudText>Loading...</MudText>
+        </LoadingContent>
+        <PagerContent>
+            <MudTablePager></MudTablePager>
+        </PagerContent>
+    </MudTable>
+}
+
+@code {
+    private string currentLoggedInUserName;
+    private string currentLoggedInUserFullName;
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+
+    private bool IsLoading = true;
+    private bool dense = true;
+    private bool hover = true;
+    private bool striped = true;
+    private bool bordered = true;
+    private bool fixed_header = false;
+    private IEnumerable<Microsoft.AspNetCore.Identity.IdentityRole> pagedData;
+    private MudTable<Microsoft.AspNetCore.Identity.IdentityRole> table;
+    private int totalItems;
+    private string searchString = null;
+    private IEnumerable<Microsoft.AspNetCore.Identity.IdentityRole> models = new List<Microsoft.AspNetCore.Identity.IdentityRole>();
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentLoggedInUserName = user.Identity.Name;
+            claims = user.Claims;
+            var userDetails = await _userManager.FindByNameAsync(currentLoggedInUserName);
+            var userInfo = await _IApplicationUserRepository.GetUserInfo(userDetails.Id);
+            currentLoggedInUserFullName = $"{userInfo.FirstName} {userInfo.LastName}";
+        }
+        else
+        {
+            currentLoggedInUserName = "UnKnown";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        models = await _IRoleRepository.GetAllRoles();
+        IsLoading = false;
+    }
+
+    private void Create()
+    {
+        _NavigationManager.NavigateTo($"/role/create");
+    }
+}

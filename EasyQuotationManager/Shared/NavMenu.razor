@@ -1,0 +1,32 @@
+﻿<AuthorizeView>
+    <Authorized>
+        <MudNavMenu Class="mud-width-full">
+            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home" IconColor="MudBlazor.Color.Primary">Home</MudNavLink>
+            <MudNavLink Href="/dashboard" Match="NavLinkMatch.Prefix" Icon="@Icons.Filled.Dashboard" IconColor="MudBlazor.Color.Primary">Dashboard</MudNavLink>
+            <MudNavLink Href="Identity/Account/Manage" Match="NavLinkMatch.Prefix" Icon="@Icons.Filled.ManageAccounts" IconColor="MudBlazor.Color.Primary" Disabled="false">Manage Account</MudNavLink>
+            <MudNavLink Href="/authorize" Match="NavLinkMatch.Prefix" Icon="@Icons.Filled.ManageAccounts" IconColor="MudBlazor.Color.Primary" Disabled="false">TeamLeader Authorize</MudNavLink>
+            @*<MudNavLink Href="/token" Match="NavLinkMatch.Prefix" Icon="@Icons.Filled.ManageAccounts" IconColor="MudBlazor.Color.Primary" Disabled="false">Get Token for Test</MudNavLink>*@
+            <MudNavLink Href="/products/index" Match="NavLinkMatch.Prefix" Icon="@Icons.Filled.List" IconColor="MudBlazor.Color.Primary" Disabled="false">Product</MudNavLink>
+            <MudNavGroup Title="Customers" Icon="@Icons.Filled.List" IconColor="MudBlazor.Color.Primary" Expanded="false">
+                <MudNavLink Href="customers/contact_type" Match="NavLinkMatch.Prefix" Icon="@Icons.Filled.List" IconColor="MudBlazor.Color.Primary" Disabled="false">Contact Type</MudNavLink>
+                <MudNavLink Href="customers/company_type" Match="NavLinkMatch.Prefix" Icon="@Icons.Filled.List" IconColor="MudBlazor.Color.Primary" Disabled="false">Company Type</MudNavLink>
+            </MudNavGroup>
+            @*<MudNavLink Href="/quotation/index" Match="NavLinkMatch.Prefix" Icon="@Icons.Filled.List" IconColor="MudBlazor.Color.Primary" Disabled="false">Quotation</MudNavLink>*@
+            <MudNavLink Href="/combined_products/Index" Match="NavLinkMatch.Prefix" Icon="@Icons.Filled.List" IconColor="MudBlazor.Color.Primary" Disabled="false">Combined Products</MudNavLink>
+            <MudNavLink Href="/quotation/create" Match="NavLinkMatch.Prefix" Icon="@Icons.Filled.List" IconColor="MudBlazor.Color.Primary" Disabled="false">Quotation</MudNavLink>
+        </MudNavMenu>
+    </Authorized>
+</AuthorizeView>
+
+<AuthorizeView Roles=@SD.AdminUser>
+    <Authorized>
+        <MudNavMenu Class="mud-width-full">
+            <MudNavGroup Title="Audit Log" Icon="@Icons.Filled.List" IconColor="MudBlazor.Color.Primary" Expanded="false">
+                <MudNavLink Href="audit_log/index" Match="NavLinkMatch.Prefix" Icon="@Icons.Filled.List" IconColor="MudBlazor.Color.Primary" Disabled="false">Audit Trail</MudNavLink>
+                <MudNavLink Href="internal_log/index" Match="NavLinkMatch.Prefix" Icon="@Icons.Filled.List" IconColor="MudBlazor.Color.Primary" Disabled="false">Internal Log</MudNavLink>
+            </MudNavGroup>
+            <MudNavLink Href="user/index" Match="NavLinkMatch.Prefix" Icon="@Icons.Filled.List" IconColor="MudBlazor.Color.Primary" Disabled="false">Manage Users</MudNavLink>
+            <MudNavLink Href="role/index" Match="NavLinkMatch.Prefix" Icon="@Icons.Filled.List" IconColor="MudBlazor.Color.Primary" Disabled="false">Manage Roles</MudNavLink>
+        </MudNavMenu>
+    </Authorized>
+</AuthorizeView>

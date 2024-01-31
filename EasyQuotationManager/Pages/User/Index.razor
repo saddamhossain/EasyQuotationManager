@@ -1,0 +1,281 @@
+﻿@page "/user/index"
+@attribute [Authorize(Roles = SD.AdminUser)]
+
+<PageTitle Title="Internal Logs" />
+<MudText Typo="Typo.h5" Color="MudBlazor.Color.Primary" Class="mb-4">User Management</MudText>
+
+@if (IsLoading)
+{
+    <Loading />
+}
+else if (!models.Any())
+{
+    <div class="row">
+        <div class="col-md-4">
+            <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Create" Size="MudBlazor.Size.Small" Color="MudBlazor.Color.Primary" @onclick="CreateUser">Create User</MudButton>
+        </div>
+    </div>
+    <RecordNotFoundMessage Message="No Records Found." />
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Create" Size="MudBlazor.Size.Small" Color="MudBlazor.Color.Primary" @onclick="CreateUser">Create User</MudButton>
+        </div>
+    </div>
+    <MudTable ServerData="@(new Func<TableState, Task<TableData<ApplicationUser>>>(ServerReload))"
+              Dense="@dense"
+              Hover="@hover"
+              Striped="@striped"
+              Bordered="@bordered"
+              Virtualize="true"
+              FixedHeader="@fixed_header"
+              Breakpoint="Breakpoint.Sm"
+              @ref="table"
+              SortLabel="Sort By">
+
+        <ToolBarContent>
+            <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="MudBlazor.Size.Medium" Class="mt-0"> </MudTextField>
+        </ToolBarContent>
+
+        <HeaderContent>
+            <MudTh> <MudTableSortLabel SortLabel="first_name_filed" T="ApplicationUser"> First Name </MudTableSortLabel> </MudTh>
+            <MudTh> <MudTableSortLabel SortLabel="last_name_filed" T="ApplicationUser">Last Name </MudTableSortLabel> </MudTh>
+            <MudTh> <MudTableSortLabel SortLabel="user_name_filed" T="ApplicationUser"> User Name </MudTableSortLabel> </MudTh>
+            <MudTh> <MudTableSortLabel SortLabel="phone_filed" T="ApplicationUser">Phone </MudTableSortLabel></MudTh>
+            <MudTh> <MudTableSortLabel SortLabel="license_expiration_date_filed" T="ApplicationUser">License Expiration Date </MudTableSortLabel></MudTh>
+            <MudTh Style="text-align:center"> Actions </MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd DataLabel="First Name">@context.FirstName </MudTd>
+            <MudTd DataLabel="Last Name">@context.LastName </MudTd>
+            <MudTd DataLabel="User Name">@context.UserName </MudTd>
+            <MudTd DataLabel="Phone">@context.PhoneNumber </MudTd>
+            <MudTd DataLabel="License Expiration Date">@context.LicenseExpirationDate </MudTd>
+            <MudTd DataLabel="Actions" Style="text-align:center">
+                <MudTooltip Text="Manage Roles" Placement="MudBlazor.Placement.Bottom">
+                    <MudFab Color="MudBlazor.Color.Secondary" Size="MudBlazor.Size.Small" IconSize="MudBlazor.Size.Small" Class="ma-2" Icon="@Icons.Material.Filled.Visibility" OnClick="(()=>ManageRoles(context.Id))" />
+                </MudTooltip>
+                <MudTooltip Text="View" Placement="MudBlazor.Placement.Bottom">
+                    <MudFab Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Small" IconSize="MudBlazor.Size.Small" Class="ma-2" Icon="@Icons.Material.Filled.Visibility" OnClick="(()=>View(context.Id))" />
+                </MudTooltip>
+                <MudTooltip Text="Edit" Placement="MudBlazor.Placement.Bottom">
+                    <MudFab Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" IconSize="MudBlazor.Size.Small" Class="ma-2" Icon="@Icons.Material.Filled.Visibility" OnClick="(()=>Edit(context.Id))" />
+                </MudTooltip>
+                <MudTooltip Text="Delete" Placement="MudBlazor.Placement.Bottom">
+                    <MudFab Color="MudBlazor.Color.Error" Size="MudBlazor.Size.Small" IconSize="MudBlazor.Size.Small" Class="ma-2" Icon="@Icons.Material.Filled.Delete" OnClick="(()=>Delete(context.Id))" />
+                </MudTooltip>
+                @if (context.LockoutEnd == null || context.LockoutEnd < DateTime.Now)
+                    {
+                    <MudFab Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" IconSize="MudBlazor.Size.Small" Class="ma-2" Icon="@Icons.Material.Filled.LockOpen" @onclick="@(()=> UserLock(context.Id))" />
+                    }
+                    else
+                    {
+                    <MudFab Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" IconSize="MudBlazor.Size.Small" Class="ma-2" Icon="@Icons.Material.Filled.Lock" @onclick="@(()=> UserUnlock(context.Id))" />
+                    }
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>No matching records found</MudText>
+        </NoRecordsContent>
+        <LoadingContent>
+            <MudText>Loading...</MudText>
+        </LoadingContent>
+        <PagerContent>
+            <MudTablePager></MudTablePager>
+        </PagerContent>
+    </MudTable>
+}
+
+@code {
+    private string currentLoggedInUserName;
+    private string currentLoggedInUserFullName;
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+
+    private bool IsLoading = true;
+    private bool dense = true;
+    private bool hover = true;
+    private bool striped = true;
+    private bool bordered = true;
+    private bool fixed_header = false;
+    private IEnumerable<ApplicationUser> pagedData;
+    private MudTable<ApplicationUser> table;
+    private int totalItems;
+    private string searchString = null;
+    private IEnumerable<ApplicationUser> models = new List<ApplicationUser>();
+
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentLoggedInUserName = user.Identity.Name;
+            claims = user.Claims;
+            var userDetails = await _userManager.FindByNameAsync(currentLoggedInUserName);
+            var userInfo = await _IApplicationUserRepository.GetUserInfo(userDetails.Id);
+            currentLoggedInUserFullName = $"{userInfo.FirstName} {userInfo.LastName}";
+        }
+        else
+        {
+            currentLoggedInUserName = "UnKnown";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        models = await _IApplicationUserRepository.GetAllUser();
+        IsLoading = false;
+    }
+
+    private async Task<TableData<ApplicationUser>> ServerReload(TableState state)
+    {
+        models = await _IApplicationUserRepository.GetAllUser();
+        await Task.Delay(300);
+        models = models.Where(s =>
+        {
+            if (string.IsNullOrWhiteSpace(searchString))
+                return true;
+            if (s.FirstName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (s.LastName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (s.UserName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (s.PhoneNumber.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if ($"{s.LicenseExpirationDate}".Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            return false;
+        }).ToArray();
+        totalItems = models.Count();
+        switch (state.SortLabel)
+        {
+            case "first_name_filed":
+                models = models.OrderByDirection(state.SortDirection, s => s.FirstName);
+                break;
+            case "last_name_filed":
+                models = models.OrderByDirection(state.SortDirection, s => s.LastName);
+                break;
+            case "user_name_filed":
+                models = models.OrderByDirection(state.SortDirection, s => s.UserName);
+                break;
+            case "phone_filed":
+                models = models.OrderByDirection(state.SortDirection, s => s.PhoneNumber);
+                break;
+            case "license_expiration_date_filed":
+                models = models.OrderByDirection(state.SortDirection, s => s.LicenseExpirationDate);
+                break;
+        }
+        pagedData = models.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
+        return new TableData<ApplicationUser>() { TotalItems = totalItems, Items = pagedData };
+    }
+
+    private void OnSearch(string text)
+    {
+        searchString = text;
+        table.ReloadServerData();
+    }
+
+    private void CreateUser()
+    {
+        _NavigationManager.NavigateTo($"/user/create");
+    }
+
+    private void ManageRoles(string id)
+    {
+        _NavigationManager.NavigateTo($"/user/manage_user_roles/{id}");
+    }
+
+    private void View(string id)
+    {
+        _NavigationManager.NavigateTo($"/user/view/{id}");
+    }
+
+    private void Edit(string id)
+    {
+        _NavigationManager.NavigateTo($"/user/edit/{id}");
+    }
+
+    private void Delete(string id)
+    {
+        _NavigationManager.NavigateTo($"/user/delete/{id}");
+    }
+
+
+    protected async Task UserLock(string id)
+    {
+        try
+        {
+            bool confirmed = await _IJSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to Lock this user?");
+            if (confirmed)
+            {
+                if (id != null)
+                {
+                    bool is_updated = await _IApplicationUserRepository.UserIsLocked(id);
+                    if (is_updated)
+                    {
+                        SnackbarControl("User successfully Locked!", Severity.Success, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+                        await table.ReloadServerData();
+                        this.StateHasChanged();
+                    }
+                    else
+                    {
+                        SnackbarControl("", Severity.Warning, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+                        this.StateHasChanged();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            SnackbarControl(ex.Message.ToString(), Severity.Warning, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+        }
+    }
+
+    protected async Task UserUnlock(string id)
+    {
+        try
+        {
+            bool confirmed = await _IJSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to Unlock this user?");
+            if (confirmed)
+            {
+                if (id != null)
+                {
+                    bool is_updated = await _IApplicationUserRepository.UserIsUnLocked(id);
+                    if (is_updated)
+                    {
+                        SnackbarControl("User successfully Unlocked!", Severity.Success, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+                        await table.ReloadServerData();
+                        this.StateHasChanged();
+                    }
+                    else
+                    {
+                        SnackbarControl("", Severity.Warning, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+                        this.StateHasChanged();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            SnackbarControl(ex.Message.ToString(), Severity.Warning, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+        }
+    }
+
+    void SnackbarControl(string message, Severity severity, string position, Variant variant)
+    {
+        _ISnackbar.Clear();
+        _ISnackbar.Configuration.PositionClass = position;
+        _ISnackbar.Configuration.SnackbarVariant = variant;
+        _ISnackbar.Add(message, severity, config =>
+        {
+            config.ShowCloseIcon = true;
+        });
+    }
+
+}

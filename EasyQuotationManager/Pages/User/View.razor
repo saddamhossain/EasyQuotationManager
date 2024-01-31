@@ -1,0 +1,152 @@
+﻿@page "/user/view/{Id}"
+@attribute [Authorize(Roles = SD.AdminUser)]
+
+<PageTitle Title="View User" />
+<MudText Typo="Typo.h5" Color="MudBlazor.Color.Primary" Class="mb-4">View User Details of <strong> @Model.UserName </strong></MudText>
+
+@if (string.IsNullOrWhiteSpace(Id))
+{
+    <ErrorMessage Message="Invalid Selection. Please Try Again" />
+}
+else
+{
+    <div class="row">
+        <div class="col-sm-12 col-md-12 col-lg-6">
+            <table class="table table-responsive">
+                <tr>
+                    <td class="table_header">First Name</td>
+                    <td> @Model.FirstName</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Last Name</td>
+                    <td> @Model.LastName</td>
+                </tr>
+                <tr>
+                    <td class="table_header">User Name</td>
+                    <td> @Model.UserName</td>
+                </tr>
+                <tr>
+                    <td class="table_header">License Expiration Date</td>
+                    <td> @Model.LicenseExpirationDate</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Email</td>
+                    <td> @Model.Email</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Email Confirmed</td>
+                    @if (Model.EmailConfirmed == true)
+                    {
+                        <td><span class="badge badge-success">True</span> </td>
+
+                    }
+                    else
+                    {
+                        <td><span class="badge badge-warning">False</span> </td>
+                    }
+                </tr>
+                <tr>
+                    <td class="table_header">Lockout</td>
+                    @if (Model.LockoutEnd == null || Model.LockoutEnd < DateTime.Now)
+                    {
+                        <td><span class="badge badge-success">Unlock</span> </td>
+
+                    }
+                    else
+                    {
+                        <td><span class="badge badge-warning">Lock</span> </td>
+                    }
+                </tr>
+            </table>
+        </div>
+        <div class="col-sm-12 col-md-12 col-lg-6">
+            <table class="table table-responsive">
+                <tr>
+                    <td class="table_header">Phone Number</td>
+                    <td> @Model.PhoneNumber</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Two Factor Enabled</td>
+                    @if (Model.TwoFactorEnabled == true)
+                    {
+                        <td><span class="badge badge-success">True</span> </td>
+
+                    }
+                    else
+                    {
+                        <td><span class="badge badge-warning">False</span> </td>
+                    }
+                </tr>
+                <tr>
+                    <td class="table_header">Created By</td>
+                    <td> @Model.CreatedBy</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Created Date</td>
+                    <td> @Model.CreatedDate</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Updated By</td>
+                    <td> @Model.UpdatedBy</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Updated Date</td>
+                    <td> @Model.UpdatedDate</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.List" Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" @onclick="BackToList">Back To List</MudButton>
+    <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Update" Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" @onclick="GoToEdit">Edit</MudButton>
+    <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Color="MudBlazor.Color.Error" Size="MudBlazor.Size.Small" @onclick="GoToDelete">Delete</MudButton>
+    <div class="mt-5"></div>
+ }
+
+@code {
+    private string currentLoggedInUserName;
+    private string currentLoggedInUserFullName;
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+
+    [Parameter]
+    public string Id { set; get; }
+    private ApplicationUser Model = new ApplicationUser();
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentLoggedInUserName = user.Identity.Name;
+            claims = user.Claims;
+            var userDetails = await _userManager.FindByNameAsync(currentLoggedInUserName);
+            var userInfo = await _IApplicationUserRepository.GetUserById(userDetails.Id);
+            currentLoggedInUserFullName = $"{userInfo.FirstName} {userInfo.LastName}";
+        }
+        else
+        {
+            currentLoggedInUserName = "UnKnown";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        Model = await _IApplicationUserRepository.GetUserById(Id);
+    }
+
+    private void GoToEdit()
+    {
+        _NavigationManager.NavigateTo($"/user/edit/{Model.Id}");
+    }
+
+    private void GoToDelete()
+    {
+        _NavigationManager.NavigateTo($"/user/delete/{Model.Id}");
+    }
+
+    private void BackToList()
+    {
+        _NavigationManager.NavigateTo("/user/index");
+    } }

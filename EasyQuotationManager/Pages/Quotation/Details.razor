@@ -1,0 +1,226 @@
+﻿@page "/quotation/details/{Id}"
+@attribute [Authorize]
+
+<PageTitle Title="Details" />
+<MudText Typo="Typo.h5" Color="MudBlazor.Color.Primary" Class="mb-4">Details</MudText>
+
+@if (IsLoading)
+{
+    <Loading />
+}
+else
+{
+    <div class="row">
+        <div class="col-sm-12">
+            <table class="table table-hover table-responsive">
+                <tr>
+                    <td class="text-info"> Deal Type</td>
+                    <td> @models.Data.data.deal.type</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-6">
+            <h5 class="text-info">Grouped Lines</h5>
+            <table class="table table-hover table-responsive">
+                <tr>
+                    <td class="table_header"> Section Title</td>
+                    <td> @models.Data.data.grouped_lines.FirstOrDefault()?.section.title</td>
+                </tr>
+                <tr>
+                    <td class="table_header">quantity</td>
+                    <td> @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().quantity</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Description</td>
+                    <td> @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().description</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Extended Description</td>
+                    <td> @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().extended_description</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Unit Price</td>
+                    <td> @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().unit_price.amount <span></span>  @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().unit_price.currency</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Tax</td>
+                    <td>@models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().unit_price.tax</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Tax Type</td>
+                    <td> @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().tax.type</td>
+                </tr>
+                @if (models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().discount != null)
+                {
+                    <tr>
+                        <td class="table_header">Discount Type</td>
+                        <td> @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().discount.type</td>
+                    </tr>
+                    <tr>
+                        <td class="table_header">Discount Value</td>
+                        <td> @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().discount.value</td>
+                    </tr>
+                }
+            </table>
+        </div>
+
+        <div class="col-sm-6">
+            <table class="table table-hover table-responsive">
+                <tr>
+                    <td class="table_header">Purchase Price</td>
+                    <td> @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().purchase_price.amount <span> </span> @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().purchase_price.currency</td>
+                </tr>
+
+                <tr>
+                    <td class="table_header">Total Tax Exclusive</td>
+                    <td> @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().total.tax_exclusive.amount <span> </span>   @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().total.tax_exclusive.currency</td>
+                </tr>
+
+                <tr>
+                    <td class="table_header">Total Exclusive Before Discount</td>
+                    <td> @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().total.tax_exclusive_before_discount.amount <span> </span>   @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().total.tax_exclusive_before_discount.currency</td>
+                </tr>
+
+                <tr>
+                    <td class="table_header">Total Inclusive Before Discount</td>
+                    <td> @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().total.tax_inclusive.amount <span> </span>   @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().total.tax_inclusive.currency</td>
+                </tr>
+
+                <tr>
+                    <td class="table_header">Total Inclusive Before Discount</td>
+                    <td> @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().total.tax_inclusive_before_discount.amount <span> </span>   @models.Data.data.grouped_lines.FirstOrDefault()?.line_items.FirstOrDefault().total.tax_inclusive_before_discount.currency</td>
+                </tr>
+
+                <tr>
+                    <td class="table_header"> Currency Exchange Rate(From -To)</td>
+                    <td>@models.Data.data.currency_exchange_rate.rate <span> </span> (@models.Data.data.currency_exchange_rate.from  - @models.Data.data.currency_exchange_rate.to)</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-6">
+            <h5 class="text-info">Total</h5>
+            <table class="table table-hover table-responsive">
+                <tr>
+                    <td class="table_header">Tax Exclusive</td>
+                    <td> @models.Data.data.total.tax_exclusive.amount <span> </span>  @models.Data.data.total.tax_exclusive.currency</td>
+                </tr>
+
+                <tr>
+                    <td class="table_header">Tax Inclusive</td>
+                    <td> @models.Data.data.total.tax_inclusive.amount <span> </span>  @models.Data.data.total.tax_inclusive.currency</td>
+                </tr>
+
+                <tr>
+                    <td class="table_header">Tax Rate</td>
+                    <td> @models.Data.data.total.taxes.FirstOrDefault().rate</td>
+                </tr>
+
+                <tr>
+                    <td class="table_header">Taxable Amount</td>
+                    <td> @models.Data.data.total.taxes.FirstOrDefault().taxable.amount <span> </span> @models.Data.data.total.taxes.FirstOrDefault().taxable.currency</td>
+                </tr>
+
+                <tr>
+                    <td class="table_header">Tax Amount</td>
+                    <td> @models.Data.data.total.taxes.FirstOrDefault().tax.amount <span> </span> @models.Data.data.total.taxes.FirstOrDefault().tax.currency</td>
+                </tr>
+
+                <tr>
+                    <td class="table_header">Purchase Price</td>
+                    <td> @models.Data.data.total.purchase_price.amount <span> </span>  @models.Data.data.total.purchase_price.currency</td>
+                </tr>
+            </table>
+        </div>
+        <div class="col-sm-6">
+            <h5 class="text-info">Discounts</h5>
+            <table class="table table-hover table-responsive">
+                @if (@models.Data.data.discounts.Count() != 0)
+                {
+                    <tr>
+                        <td class="table_header">Value</td>
+                        <td> @models.Data.data.discounts.FirstOrDefault().value</td>
+                    </tr>
+                    <tr>
+                        <td class="table_header">Type</td>
+                        <td> @models.Data.data.discounts.FirstOrDefault().type</td>
+                    </tr>
+                    <tr>
+                        <td class="table_header">Description</td>
+                        <td> @models.Data.data.discounts.FirstOrDefault().description</td>
+                    </tr>
+                }
+                else
+                {
+                    <tr>
+                        <td class="table_header">Discounts</td>
+                        <td> No Data Available</td>
+                    </tr>
+                }
+
+                <tr>
+                    <td class="table_header">Status</td>
+                    <td> @models.Data.data.status</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Added At</td>
+                    <td> @models.Data.data.created_at</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.List" Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" @onclick="BackToList">Back To List</MudButton>
+    <div class="mt-5"></div>
+}
+
+@code {
+    private string currentLoggedInUserName;
+    private string currentLoggedInUserFullName;
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+
+    [Parameter]
+    public string Id { set; get; }
+    private CommonServiceResult<QuotationDetailsResponseDTO> models = new CommonServiceResult<QuotationDetailsResponseDTO>();
+    private bool IsLoading = true;
+
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentLoggedInUserName = user.Identity.Name;
+            claims = user.Claims;
+            var userDetails = await _userManager.FindByNameAsync(currentLoggedInUserName);
+            var userInfo = await _IApplicationUserRepository.GetUserInfo(userDetails.Id);
+            currentLoggedInUserFullName = $"{userInfo.FirstName} {userInfo.LastName}";
+        }
+        else
+        {
+            currentLoggedInUserName = "UnKnown";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        models = await _IQuotationRepository.Get(Id);
+        //if (models.Data != null && models.Data.data.data.deal != null)
+        //{
+        //    //var parsedModel = _contactService.ConvertGetModelToUpdateModel(model.Data);
+        //    //return View(parsedModel);
+        //}
+        IsLoading = false;
+    }
+
+    private void BackToList()
+    {
+        _NavigationManager.NavigateTo("/quotation/index");
+    }
+}

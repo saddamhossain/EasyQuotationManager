@@ -1,0 +1,171 @@
+﻿@page "/internal_log/view/{Id}"
+@attribute [Authorize(Roles = SD.AdminUser)]
+
+<PageTitle Title="View Internal Log" />
+<MudText Typo="Typo.h5" Color="MudBlazor.Color.Primary" Class="mb-4">View Internal Log Details</MudText>
+
+@if (Model == null || IdIsIntValidation == true)
+{
+    <ErrorMessage Message="Invalid Selection. Please Try Again" />
+    <div class="mt-5"></div>
+    <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.List" Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" @onclick="BackToList">Back To List</MudButton>
+}
+else if (IsLoading)
+{
+    <Loading />
+}
+else
+{
+    <div class="row">
+        <div class="col-sm-6">
+            <table class="table table-responsive">
+                <tr>
+                    <td class="table_header">Controller</td>
+                    <td> @Model.ControllerName</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Service Name</td>
+                    <td> @Model.ServiceName</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Action Name</td>
+                    <td> @Model.ActionName</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Log Type</td>
+                    <td>
+                        @if (Model.LogType == AuditType.Delete.ToString())
+                        {
+                            <MudChip Text="danger" Color="Color.Error" Size="Size.Small"> @Model.LogType</MudChip>
+                        }
+                        else if (Model.LogType == AuditType.Update.ToString())
+                        {
+                            <MudChip Text="orange" Color="Color.Primary" Size="Size.Small"> @Model.LogType</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip Text="info" Color="Color.Info" Size="Size.Small"> @Model.LogType</MudChip>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td class="table_header">Razor Page</td>
+                    <td> @Model.RazorPageName</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Log Description</td>
+                    <td> @Model.LogDescription</td>
+                </tr>
+                <tr>
+                    <td class="table_header">User ID</td>
+                    <td> @Model.UserId</td>
+                </tr>
+                <tr>
+                    <td class="table_header">User Name</td>
+                    <td class="text-info"> @Model.UserName</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Role Name</td>
+                    <td class="text-info"> @Model.RoleName</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="col-sm-6">
+            <table class="table table-responsive">
+                <tr>
+                    <td class="table_header">Session ID</td>
+                    <td> @Model.SessionId</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Connection ID</td>
+                    <td> @Model.ConnectionId</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Trace Identifier</td>
+                    <td> @Model.TraceIdentifier</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Local IP Address</td>
+                    <td> @Model.LocalIpAddress</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Local Port</td>
+                    <td> @Model.LocalPort</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Remote IP Address</td>
+                    <td> @Model.RemoteIpAddress</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Remote Port</td>
+                    <td> @Model.RemotePort</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Created Date</td>
+                    <td> @Model.CreatedDate</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.List" Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" @onclick="BackToList">Back To List</MudButton>
+    <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Color="MudBlazor.Color.Error" Size="MudBlazor.Size.Small" @onclick="GoToDelete">Delete</MudButton>
+}
+
+@code {
+    private string currentLoggedInUserName;
+    private string currentLoggedInUserFullName;
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+
+    [Parameter]
+    public string Id { set; get; }
+    private InternalLog Model = new InternalLog();
+
+    private bool IsSuccess = true;
+    private bool IsLoading = true;
+    private bool IdIsIntValidation = false;
+    private int IdInt;
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentLoggedInUserName = user.Identity.Name;
+            claims = user.Claims;
+            var userDetails = await _userManager.FindByNameAsync(currentLoggedInUserName);
+            var userInfo = await _IApplicationUserRepository.GetUserInfo(userDetails.Id);
+            currentLoggedInUserFullName = $"{userInfo.FirstName} {userInfo.LastName}";
+        }
+        else
+        {
+            currentLoggedInUserName = "UnKnown";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        bool isInt = int.TryParse(Id, out IdInt);
+        if (isInt == false)
+        {
+            // string is not a number
+            IdIsIntValidation = true;
+            return;
+        }
+        int id = Convert.ToInt32(Id);
+        Model = await _IInternalLogRepository.GetInternalLogById(id);
+        IsLoading = false;
+    }
+
+    private void GoToDelete()
+    {
+        _NavigationManager.NavigateTo($"/internal_log/delete/{Model.Id}");
+    }
+
+    private void BackToList()
+    {
+        _NavigationManager.NavigateTo("/internal_log/index");
+    }
+}

@@ -1,0 +1,11 @@
+﻿<MudGrid>
+    <MudItem xs="12">
+        <MudAlert Severity="Severity.Info">@Message</MudAlert>
+    </MudItem>
+</MudGrid>
+
+@code
+{ 
+    [Parameter]
+    public string Message { get; set; } 
+}

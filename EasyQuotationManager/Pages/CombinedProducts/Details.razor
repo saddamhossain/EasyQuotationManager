@@ -1,0 +1,177 @@
+﻿@page "/combined_products/details/{Id}"
+@attribute [Authorize]
+
+<PageTitle Title="Details Combined Product" />
+<MudText Typo="Typo.h5" Color="MudBlazor.Color.Primary" Class="mb-4"> Details Combined Product</MudText>
+
+<style>
+    .table_header {
+        font-weight: bold;
+    }
+</style>
+
+
+@if (models == null)
+{
+    <ErrorMessage Message="Invalid Selection. Please Try Again" />
+    <div class="mt-5"></div>
+    <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.List" Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" @onclick="BackToList">Back To List</MudButton>
+}
+else if (IsLoading)
+{
+    <Loading />
+}
+else
+{
+    <MudTable ServerData="@(new Func<TableState, Task<TableData<ProductComposition>>>(ServerReload))"
+              Dense="@dense"
+              Hover="@hover"
+              Striped="@striped"
+              Bordered="@bordered"
+              Virtualize="true"
+              FixedHeader="@fixed_header"
+              Breakpoint="Breakpoint.Sm"
+              @ref="table"
+              SortLabel="Sort By">
+
+        <ToolBarContent>
+            <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="MudBlazor.Size.Medium" Class="mt-0"> </MudTextField>
+        </ToolBarContent>
+
+        <HeaderContent>
+            <MudTh>
+                <MudTableSortLabel SortLabel="CombinedProductIdOrName_filed" T="ProductComposition"> Combined Product Id/Name </MudTableSortLabel>
+            </MudTh>
+            <MudTh>
+                <MudTableSortLabel SortLabel="CombinedProductQty_filed" T="ProductComposition">Combined Product Quantity </MudTableSortLabel>
+            </MudTh>
+
+            <MudTh>
+                <MudTableSortLabel SortLabel="SubProductName_filed" T="ProductComposition">Sub Product Name </MudTableSortLabel>
+            </MudTh>
+
+            <MudTh>
+                <MudTableSortLabel SortLabel="SubProductQty_filed" T="ProductComposition">Sub Product Quantity </MudTableSortLabel>
+            </MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd DataLabel="Combined Product Id/Name">@context.CombinedProductIdOrName </MudTd>
+            <MudTd DataLabel="Combined Product Quantity">@context.CombinedProductQty </MudTd>
+            <MudTd DataLabel="Sub Product Name">@context.SubProductName </MudTd>
+            <MudTd DataLabel="Sub Product Quantity">@context.SubProductQty </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>No matching records found</MudText>
+        </NoRecordsContent>
+        <LoadingContent>
+            <MudText>Loading...</MudText>
+        </LoadingContent>
+        <PagerContent>
+            <MudTablePager></MudTablePager>
+        </PagerContent>
+    </MudTable>
+    <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.List" Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" @onclick="BackToList">Back To List</MudButton>
+}
+
+
+@code {
+    private string currentLoggedInUserName;
+    private string currentLoggedInUserFullName;
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+
+    [Parameter]
+    public string Id { set; get; }
+
+    private bool dense = true;
+    private bool hover = true;
+    private bool striped = true;
+    private bool bordered = true;
+    private bool fixed_header = false;
+    private IEnumerable<ProductComposition> pagedData;
+    private MudTable<ProductComposition> table;
+    private int totalItems;
+    private string searchString = null;
+    private IEnumerable<ProductComposition> models = new List<ProductComposition>();
+    private bool IsLoading = true;
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentLoggedInUserName = user.Identity.Name;
+            claims = user.Claims;
+            var userDetails = await _userManager.FindByNameAsync(currentLoggedInUserName);
+            var userInfo = await _IApplicationUserRepository.GetUserInfo(userDetails.Id);
+            currentLoggedInUserFullName = $"{userInfo.FirstName} {userInfo.LastName}";
+        }
+        else
+        {
+            currentLoggedInUserName = "UnKnown";
+        }
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        models = await _IProductRepository.GetCombinedProductById(Id);
+        IsLoading = false;
+    }
+
+
+    //Here we simulate getting the paged, filtered and ordered data from the server
+    private async Task<TableData<ProductComposition>> ServerReload(TableState state)
+    {
+        models = await _IProductRepository.GetCombinedProductById(Id);
+        await Task.Delay(300);
+        models = models.Where(s =>
+        {
+            if (string.IsNullOrWhiteSpace(searchString))
+                return true;
+            if (s.CombinedProductIdOrName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (s.SubProductName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if ($"{s.CombinedProductQty}{s.SubProductQty}".Contains(searchString))
+                return true;
+            return false;
+        }).ToArray();
+
+        totalItems = models.Count();
+
+        switch (state.SortLabel)
+        {
+            case "CombinedProductIdOrName_filed":
+                models = models.OrderByDirection(state.SortDirection, s => s.CombinedProductIdOrName);
+                break;
+            case "CombinedProductQty_filed":
+                models = models.OrderByDirection(state.SortDirection, s => s.CombinedProductQty);
+                break;
+            case "SubProductName_filed":
+                models = models.OrderByDirection(state.SortDirection, s => s.SubProductName);
+                break;
+            case "SubProductQty_filed":
+                models = models.OrderByDirection(state.SortDirection, s => s.SubProductQty);
+                break;
+        }
+
+        pagedData = models.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
+        return new TableData<ProductComposition>() { TotalItems = totalItems, Items = pagedData };
+    }
+
+    private void OnSearch(string text)
+    {
+        searchString = text;
+        table.ReloadServerData();
+    }
+
+
+    private void BackToList()
+    {
+        _NavigationManager.NavigateTo("/combined_products/index");
+    }
+
+}

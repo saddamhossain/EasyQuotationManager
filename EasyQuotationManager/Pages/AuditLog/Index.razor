@@ -1,0 +1,180 @@
+﻿@page "/audit_log/index"
+@attribute [Authorize(Roles = SD.AdminUser)]
+
+<PageTitle Title="Internal Logs" />
+<MudText Typo="Typo.h5" Color="MudBlazor.Color.Primary" Class="mb-4">Audit Logs</MudText>
+
+@if (IsLoading)
+{
+<Loading />
+ }
+else if (!models.Any())
+{
+<RecordNotFoundMessage Message="No Records Found." />
+ }
+else
+{
+<MudTable ServerData="@(new Func<TableState, Task<TableData<AuditLog>>>(ServerReload))"
+          Dense="@dense"
+          Hover="@hover"
+          Striped="@striped"
+          Bordered="@bordered"
+          Virtualize="true"
+          FixedHeader="@fixed_header"
+          Breakpoint="Breakpoint.Sm"
+          @ref="table"
+          SortLabel="Sort By">
+
+    <ToolBarContent>
+        <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="MudBlazor.Size.Medium" Class="mt-0"> </MudTextField>
+    </ToolBarContent>
+
+    <HeaderContent>
+        <MudTh> <MudTableSortLabel SortLabel="log_type_filed" T="AuditLog"> Audit Type </MudTableSortLabel> </MudTh>
+        <MudTh> <MudTableSortLabel SortLabel="role_name_filed" T="AuditLog">Role </MudTableSortLabel> </MudTh>
+        <MudTh> <MudTableSortLabel SortLabel="user_name_filed" T="AuditLog"> User </MudTableSortLabel> </MudTh>
+        <MudTh> <MudTableSortLabel SortLabel="table_name_filed" T="AuditLog">Table </MudTableSortLabel></MudTh>
+        <MudTh> <MudTableSortLabel SortLabel="created_date_filed" T="AuditLog">Created Date </MudTableSortLabel> </MudTh>
+        <MudTh Style="text-align:center"> Actions </MudTh>
+    </HeaderContent>
+
+    <RowTemplate>
+        <MudTd DataLabel="Audit Type" Style="text-align:center">
+            @if (context.AuditType == AuditType.Delete.ToString())
+                {
+                    <MudChip Text="danger" Color="Color.Error" Size="Size.Small"> @context.AuditType</MudChip> 
+                }
+                else if (context.AuditType == AuditType.Update.ToString())
+                {
+                    <MudChip Text="orange" Color="Color.Primary" Size="Size.Small"> @context.AuditType</MudChip>
+                }
+                else
+                {
+                    <MudChip Text="info" Color="Color.Info" Size="Size.Small"> @context.AuditType</MudChip>
+                }
+        </MudTd>
+        <MudTd DataLabel="Role">@context.RoleName </MudTd>
+        <MudTd DataLabel="User">@context.UserName </MudTd>
+        <MudTd DataLabel="Table">@context.TableName </MudTd>
+        <MudTd DataLabel="Created Date">@context.DateTime </MudTd>
+        <MudTd DataLabel="Actions" Style="text-align:center">
+            <MudTooltip Text="View" Placement="MudBlazor.Placement.Bottom">
+                <MudFab Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" IconSize="MudBlazor.Size.Small" Class="ma-2" Icon="@Icons.Material.Filled.Visibility" OnClick="(()=>View(context.Id))" />
+            </MudTooltip>
+            <MudTooltip Text="Delete" Placement="MudBlazor.Placement.Bottom">
+                <MudFab Color="MudBlazor.Color.Error" Size="MudBlazor.Size.Small" IconSize="MudBlazor.Size.Small" Class="ma-2" Icon="@Icons.Material.Filled.Delete" OnClick="(()=>Delete(context.Id))" />
+            </MudTooltip>
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No matching records found</MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudText>Loading...</MudText>
+    </LoadingContent>
+    <PagerContent>
+        <MudTablePager></MudTablePager>
+    </PagerContent>
+</MudTable>
+}
+
+@code { 
+    private string currentLoggedInUserName;
+    private string currentLoggedInUserFullName;
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+
+    private bool IsLoading = true;
+    private bool dense = true;
+    private bool hover = true;
+    private bool striped = true;
+    private bool bordered = true;
+    private bool fixed_header = false;
+    private IEnumerable<AuditLog> pagedData;
+    private MudTable<AuditLog> table;
+    private int totalItems;
+    private string searchString = null;
+    private IEnumerable<AuditLog> models = new List<AuditLog>();
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentLoggedInUserName = user.Identity.Name;
+            claims = user.Claims;
+            var userDetails = await _userManager.FindByNameAsync(currentLoggedInUserName);
+            var userInfo = await _IApplicationUserRepository.GetUserInfo(userDetails.Id);
+            currentLoggedInUserFullName = $"{userInfo.FirstName} {userInfo.LastName}";
+        }
+        else
+        {
+            currentLoggedInUserName = "UnKnown";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        models = await _IAuditLogRepository.GetAllAuditLog();
+        IsLoading = false;
+    }
+
+    private async Task<TableData<AuditLog>> ServerReload(TableState state)
+    {
+        models = await _IAuditLogRepository.GetAllAuditLog();
+        await Task.Delay(300);
+        models = models.Where(s =>
+        {
+            if (string.IsNullOrWhiteSpace(searchString))
+                return true;
+            if (s.AuditType.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (s.RoleName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (s.UserName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (s.TableName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if ($"{s.DateTime}".Contains(searchString))
+                return true;
+            return false;
+        }).ToArray();
+        totalItems = models.Count();
+        switch (state.SortLabel)
+        {
+            case "log_type_filed":
+                models = models.OrderByDirection(state.SortDirection, s => s.AuditType);
+                break;
+            case "role_name_filed":
+                models = models.OrderByDirection(state.SortDirection, s => s.RoleName);
+                break;
+            case "user_name_filed":
+                models = models.OrderByDirection(state.SortDirection, s => s.UserName);
+                break;
+            case "table_name_filed":
+                models = models.OrderByDirection(state.SortDirection, s => s.TableName);
+                break;
+            case "created_date_filed":
+                models = models.OrderByDirection(state.SortDirection, s => s.DateTime);
+                break;
+        }
+        pagedData = models.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
+        return new TableData<AuditLog>() { TotalItems = totalItems, Items = pagedData };
+    }
+
+    private void OnSearch(string text)
+    {
+        searchString = text;
+        table.ReloadServerData();
+    }
+
+    private void View(int auditLogId)
+    {
+        _NavigationManager.NavigateTo($"/audit_log/view/{auditLogId}");
+    }
+
+    private void Delete(int auditLogId)
+    {
+        _NavigationManager.NavigateTo($"/audit_log/delete/{auditLogId}");
+    } }

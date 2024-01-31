@@ -1,0 +1,256 @@
+﻿@page "/combined_products/create"
+@attribute [Authorize]
+
+<PageTitle Title="Combined Products" />
+<MudText Typo="Typo.h5" Color="MudBlazor.Color.Primary" Class="mb-4">Create Combined Products</MudText>
+
+@if (IsLoading)
+{
+    <Loading />
+}
+else
+{
+<EditForm Model="Model" OnValidSubmit="CreateCombinedProducts">
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="form-group">
+
+                <div class="form-group">
+                    <label> Combined Product Id/Name </label>
+                    <InputText @bind-Value="Model.CombinedProductIdOrName" class="form-control"> </InputText>
+                </div>
+
+                <div class="form-group">
+                    <label> Combined Product Quantity</label>
+                    <InputNumber @bind-Value="Model.CombinedProductQty" min="0" step="1" class="form-control"> </InputNumber>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    @if (!ProdcutModel.Data.data.Any())
+    {
+        <RecordNotFoundMessage Message="No Sub Products Found." />
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-sm-12">
+                <h5> <span class="badge badge-secondary">Sub Products: </span></h5>
+                <hr />
+            </div>
+
+            <div class="col-sm-12">
+                <div class="form-row">
+                    <div class="form-group col-sm-4">
+                        <label> Sub Product Name </label>
+                        <select class="form-control" @bind="SubProductId" @bind:event="oninput" @onchange="SubProductOnChanged">
+                            <option value=""> -- Select Sub Product --</option>
+                            @if (ProdcutModel.Data.data != null)
+                            {
+                                foreach (var items in ProdcutModel.Data.data)
+                                {
+                                    <option value="@items.id"> @items.name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group col-sm-4">
+                        <label> Sub Product Quantity </label>
+                        <InputNumber class="form-control" min="0" step="1" placeholder="Quantity" @bind-Value="Quantity" />
+                    </div>
+
+                    <div class="form-group col-sm-4" style="margin-top: 30px;">
+                        <a href="javascript:void(0)" class="btn btn-sm btn-outline-info" @onclick="(async () => await AddToTable(SubProductId, Quantity))">Add Sub Product</a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    }
+    <div class="row">
+        <div class="col-sm-12">
+            <table class="table table-hover table-bordered">
+                <thead>
+                    <tr>
+                        <th>Sub Product Name</th>
+                        <th class="text-center">Sub Product Quantity</th>
+                        <th class="text-center"> Action </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in SubProductDetailsViewModelList)
+                    {
+                        <tr>
+                            <td>@item.SubProductName</td>
+                            <td class="text-center">@item.quantity</td>
+                            <td class="text-center"> <a href="javascript:void(0)" class="btn btn-danger" @onclick="@(()=>OnSubProductDelete(item))">X</a> </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.List" Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" @onclick="BackToList">Back To List</MudButton>
+    <a href="javascript:void(0)" class="btn btn-sm btn-outline-secondary" @onclick="Clear"> <span class="oi oi-flash"></span>  Clear</a>
+    <MudButton ButtonType="MudBlazor.ButtonType.Reset" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Refresh" Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small">Reset</MudButton>
+    <MudButton ButtonType="MudBlazor.ButtonType.Submit" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small">Save</MudButton>
+    <div class="mt-5"></div>
+</EditForm>
+}
+
+
+@code {
+    private string currentLoggedInUserName;
+    private string currentLoggedInUserFullName;
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+    private bool IsLoading = true;
+    private bool isSuccess = true;
+    protected string SubProductId { set; get; }
+    protected string SubProductName { set; get; }
+    protected int Quantity { get; set; }
+    private ProductComposition Model = new ProductComposition();
+    private CommonServiceResult<ProductListResponseDTO> ProdcutModel = new CommonServiceResult<ProductListResponseDTO>();
+    private CommonServiceResult<ProductDetailsResponseDTO> models = new CommonServiceResult<ProductDetailsResponseDTO>();
+    protected List<SubProductDetailsViewModel> SubProductDetailsViewModelList = new List<SubProductDetailsViewModel>();
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentLoggedInUserName = user.Identity.Name;
+            claims = user.Claims;
+            var userDetails = await _userManager.FindByNameAsync(currentLoggedInUserName);
+            var userInfo = await _IApplicationUserRepository.GetUserInfo(userDetails.Id);
+            currentLoggedInUserFullName = $"{userInfo.FirstName} {userInfo.LastName}";
+        }
+        else
+        {
+            currentLoggedInUserName = "UnKnown";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        ProdcutModel = await _IProductRepository.GetAll();
+        IsLoading = false;
+    }
+
+
+    public async Task SubProductOnChanged(ChangeEventArgs e)
+    {
+        var result = e.Value;
+        var id = Convert.ToString(result);
+
+        models = await _IProductRepository.Get(id);
+
+        SubProductName = Model.CombinedProductIdOrName;
+        StateHasChanged();
+    }
+
+    protected async Task AddToTable(string SubProductId, int Quantity)
+    {
+        if (string.IsNullOrEmpty(SubProductId))
+        {
+            SnackbarControl("Please select a sub product", Severity.Warning, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+            return;
+        }
+        if (Quantity == 0)
+        {
+            SnackbarControl("Please provide sub product quantity", Severity.Warning, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+            return;
+        }
+
+        var subProductLookup = await _IProductRepository.Get(SubProductId);
+        SubProductDetailsViewModel subProductDetailsViewModel = new SubProductDetailsViewModel
+        {
+            SubProductName = subProductLookup.Data.data.name,
+            quantity = Quantity
+        };
+
+        var product_already_added_in_table = SubProductDetailsViewModelList.Where(s => s.SubProductName == subProductLookup.Data.data.name).ToList();
+        if (product_already_added_in_table.Count() > 0)
+        {
+            SnackbarControl("This sub product already added. Please remove this sub product from the table first then add or add another product", Severity.Warning, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+            return;
+        }
+        SubProductDetailsViewModelList.Add(subProductDetailsViewModel);
+    }
+
+    public void OnSubProductDelete(SubProductDetailsViewModel subProductDetailsViewModel)
+    {
+        SubProductDetailsViewModelList.Remove(subProductDetailsViewModel);
+    }
+
+
+    private async Task CreateCombinedProducts()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(Model.CombinedProductIdOrName))
+            {
+                SnackbarControl("Please insert Combined Product Id/Name", Severity.Warning, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+                return;
+            }
+
+            if (Model.CombinedProductQty == 0)
+            {
+                SnackbarControl("Combined Product Quantity can not be 0", Severity.Warning, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+                return;
+            }
+
+            if (SubProductDetailsViewModelList.Count() == 0)
+            {
+                SnackbarControl("You have to add at least one product", Severity.Warning, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+                return;
+            }
+
+            isSuccess = await _IProductRepository.InsertCombinedProducts(Model.CombinedProductIdOrName, Model.CombinedProductQty, SubProductDetailsViewModelList);
+            if (isSuccess)
+            {
+                SnackbarControl("Combined Products Created Successfully!", Severity.Success, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+                await Task.Delay(600);
+                _NavigationManager.NavigateTo(_NavigationManager.Uri, forceLoad: true);
+            }
+            else
+            {
+                SnackbarControl("Somewthing Went Wrong With the Operation", Severity.Error, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+            }
+        }
+        catch (Exception ex)
+        {
+            SnackbarControl(ex.Message.ToString(), Severity.Warning, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+        }
+    }
+
+
+    private void Clear()
+    {
+        Model = new ProductComposition();
+        Model.CombinedProductIdOrName = null;
+        Quantity = 0;
+    }
+
+    private void BackToList()
+    {
+        _NavigationManager.NavigateTo("/combined_products/index");
+    }
+
+    void SnackbarControl(string message, Severity severity, string position, Variant variant)
+    {
+        _ISnackbar.Clear();
+        _ISnackbar.Configuration.PositionClass = position;
+        _ISnackbar.Configuration.SnackbarVariant = variant;
+        _ISnackbar.Add(message, severity, config =>
+        {
+            config.ShowCloseIcon = true;
+        });
+    }
+
+}

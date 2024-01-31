@@ -1,0 +1,168 @@
+﻿@page "/audit_log/delete/{Id}"
+@attribute [Authorize(Roles = SD.AdminUser)]
+
+<PageTitle Title="Delete Audit Log" />
+
+@if (Model == null || IdIsIntValidation == true)
+{
+    <ErrorMessage Message="Invalid Selection. Please Try Again" />
+    <div class="mt-5"></div>
+    <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.List" Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" @onclick="BackToList">Back To List</MudButton>
+}
+else if (IsLoading)
+{
+    <Loading />
+}
+else
+{ 
+    <MudAlert Severity="Severity.Warning">Are You Sure You Want to Delete This Record?</MudAlert>
+    <div class="row">
+        <div class="col-sm-6">
+            <table class="table table-responsive">
+                <tr>
+                    <td class="table_header">User ID</td>
+                    <td> @Model.UserId</td>
+                </tr>
+                <tr>
+                    <td class="table_header">User Name</td>
+                    <td> @Model.UserName</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Role Name</td>
+                    <td> @Model.RoleName</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Audit Type</td>
+                    <td>
+                        @if (Model.AuditType == AuditType.Delete.ToString())
+                        {
+                            <MudChip Text="danger" Color="Color.Error" Size="Size.Small"> @Model.AuditType</MudChip>
+                        }
+                        else if (Model.AuditType == AuditType.Update.ToString())
+                        {
+                            <MudChip Text="orange" Color="Color.Primary" Size="Size.Small"> @Model.AuditType</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip Text="info" Color="Color.Info" Size="Size.Small"> @Model.AuditType</MudChip>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td class="table_header">Table Name</td>
+                    <td> @Model.TableName</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Date Time</td>
+                    <td> @Model.DateTime</td>
+                </tr>
+
+            </table>
+        </div>
+
+        <div class="col-sm-6">
+            <table class="table table-responsive">
+                <tr>
+                    <td class="table_header">Affected Columns</td>
+                    <td class="text-info"> @Model.AffectedColumns</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Old Values</td>
+                    <td> @Model.OldValues</td>
+                </tr>
+                <tr>
+                    <td class="table_header">New Values</td>
+                    <td> @Model.NewValues</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.List" Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" @onclick="BackToList">Back To List</MudButton>
+    <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Color="MudBlazor.Color.Error" Size="MudBlazor.Size.Small" @onclick="DeleteAuditLog">Delete</MudButton>
+}
+
+
+@code {
+    private string currentLoggedInUserName;
+    private string currentLoggedInUserFullName;
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+
+    [Parameter]
+    public string Id { set; get; }
+    private AuditLog Model = new AuditLog();
+
+    private bool IsSuccess = true;
+    private bool IsLoading = true;
+    private bool IdIsIntValidation = false;
+    private int IdInt;
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentLoggedInUserName = user.Identity.Name;
+            claims = user.Claims;
+            var userDetails = await _userManager.FindByNameAsync(currentLoggedInUserName);
+            var userInfo = await _IApplicationUserRepository.GetUserInfo(userDetails.Id);
+            currentLoggedInUserFullName = $"{userInfo.FirstName} {userInfo.LastName}";
+        }
+        else
+        {
+            currentLoggedInUserName = "UnKnown";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        bool isInt = int.TryParse(Id, out IdInt);
+        if (isInt == false)
+        {
+            // string is not a number
+            IdIsIntValidation = true;
+            return;
+        }
+        int id = Convert.ToInt32(Id);
+        Model = await _IAuditLogRepository.GetAuditLogById(id);
+        IsLoading = false;
+    }
+
+    private async Task DeleteAuditLog()
+    {
+        try
+        {
+            IsSuccess = await _IAuditLogRepository.DeleteAuditLog(Model.Id);
+            if (IsSuccess)
+            {
+                SnackbarControl("Audit Log Deleted Successfully", Severity.Success, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+                BackToList();
+            }
+            else
+            {
+                SnackbarControl("Somewthing Went Wrong With the Operation", Severity.Error, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+            }
+        }
+        catch (Exception ex)
+        {
+            SnackbarControl(ex.Message.ToString(), Severity.Warning, Defaults.Classes.Position.BottomRight, Variant.Outlined);
+        }
+    }
+
+    private void BackToList()
+    {
+        _NavigationManager.NavigateTo("/audit_log/index");
+    }
+
+    void SnackbarControl(string message, Severity severity, string position, Variant variant)
+    {
+        _ISnackbar.Clear();
+        _ISnackbar.Configuration.PositionClass = position;
+        _ISnackbar.Configuration.SnackbarVariant = variant;
+        _ISnackbar.Add(message, severity, config =>
+        {
+            config.ShowCloseIcon = true;
+        });
+    }
+}

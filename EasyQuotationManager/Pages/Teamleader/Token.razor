@@ -1,0 +1,40 @@
+﻿@page "/token"
+@attribute [Authorize]
+
+<PageTitle Title="Token" />
+<MudText Typo="Typo.h5" Color="MudBlazor.Color.Primary" Class="mb-4">Get Token Information</MudText>
+<div class="mt-5"></div>
+<MudText Typo="Typo.body1" Color="MudBlazor.Color.Primary" Class="mb-4">
+    This is for test purpose. Here we get bearer token, insert , update, everyting happening with access token, refresh token and update that our database.
+    We will use this when we consume API.
+</MudText>
+
+@code {
+    private string currentLoggedInUserName;
+    private string currentLoggedInUserFullName;
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentLoggedInUserName = user.Identity.Name;
+            claims = user.Claims;
+            var userDetails = await _userManager.FindByNameAsync(currentLoggedInUserName);
+            var userInfo = await _IApplicationUserRepository.GetUserInfo(userDetails.Id);
+            currentLoggedInUserFullName = $"{userInfo.FirstName} {userInfo.LastName}";
+        }
+        else
+        {
+            currentLoggedInUserName = "UnKnown";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        await _ITokenRepository.GetToken();
+    }
+}

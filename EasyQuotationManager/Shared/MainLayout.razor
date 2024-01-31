@@ -1,0 +1,87 @@
+﻿@inherits LayoutComponentBase
+
+<MudThemeProvider />
+<MudSnackbarProvider />
+<MudDialogProvider FullWidth="true"
+                   MaxWidth="MaxWidth.ExtraSmall"
+                   CloseButton="true"
+                   DisableBackdropClick="true"
+                   NoHeader="true"
+                   Position="DialogPosition.Center" />
+@*Sets the dialog to its full width even if content is smaller*@
+@*Sets the max width of the dialog*@
+@*If true adds closebutton to the dialog header*@
+@*If true, clicking the backdrop overlay will not close the dialog*@
+@*If true disabled the dialog header*@
+@*Sets the dialog postion*@
+
+<MudLayout>
+    <AuthorizeView>
+        <Authorized>
+            <MudAppBar Elevation="0">
+                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+                <MudAppBarSpacer />
+                <MudMenu Direction="Direction.Left" OffsetX="true" Dense="true" Class="mt-1 ml-4">
+                    <ActivatorContent>
+                        <MudAvatar Color="Color.Secondary">
+                            <MudIcon Icon="@Icons.Material.Filled.PersonOutline" />
+                        </MudAvatar>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <UserCard Class="mt-n2" />
+                        <MudDivider Class="mb-2" />
+                        <MudButton Link="Identity/Account/Manage" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.ManageAccounts" FullWidth="true" Color="Color.Primary" Style="text-decoration:none"> Manage Account </MudButton>
+                        <div class="mt-3"></div>
+                        <form method="post" action="Identity/Account/LogOut">
+                            <MudButton ButtonType="MudBlazor.ButtonType.Submit" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Logout" FullWidth="true" Color="Color.Primary" Size="MudBlazor.Size.Small"> Log Out</MudButton>
+                        </form>
+                    </ChildContent>
+                </MudMenu>
+            </MudAppBar>
+
+            <MudDrawer @bind-Open="_drawerOpen" Elevation="1">
+                <MudDrawerHeader>
+                    <MudText Typo="Typo.body1" Color="Color.Primary">Easy Quotation Manager</MudText>
+
+                </MudDrawerHeader>
+                <NavMenu />
+            </MudDrawer>
+        </Authorized>
+
+        <NotAuthorized>
+            <MudAppBar Elevation="0">
+                <MudAppBarSpacer />
+                <MudButton Link="Identity/Account/Login" Color="Color.Inherit" StartIcon="@Icons.Material.Filled.Login"> LOG IN </MudButton>
+            </MudAppBar>
+        </NotAuthorized>
+
+    </AuthorizeView>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+
+</MudLayout>
+
+
+@code {
+    private bool _drawerOpen = true;
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    void SnackbarControl(string message, Severity severity, string position, Variant variant)
+    {
+        _ISnackbar.Clear();
+        _ISnackbar.Configuration.PositionClass = position;
+        _ISnackbar.Configuration.SnackbarVariant = variant;
+        _ISnackbar.Add(message, severity, config =>
+        {
+            config.ShowCloseIcon = true;
+        });
+    }
+
+}

@@ -1,0 +1,94 @@
+﻿@page "/quotation/index"
+@attribute [Authorize]
+
+<PageTitle Title="Quotation" />
+<MudText Typo="Typo.h5" Color="MudBlazor.Color.Primary" Class="mb-4">Quotation</MudText>
+
+@if (IsLoading)
+{
+    <Loading />
+}
+else if (!models.Data.data.Any())
+{
+    <RecordNotFoundMessage Message="No Records Found." />
+}
+else
+{
+    <table class="table table-responsive table-bordered">
+        <thead>
+            <tr>
+                <th> Deal Type</th>
+                <th> Currency Exchange Rate(From -To)</th>
+                <th>Tax Exclusive</th>
+                <th>Tax Inclusive</th>
+                <th>Tax Rate</th>
+                <th>Taxable Amount</th>
+                <th>Tax Amount</th>
+                <th> Purchase Price</th>
+                <th> Status</th>
+                <th> Added Date</th>
+                <th class="text-center"> Action </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in models.Data.data)
+            {
+                <tr>
+                    <td>@item.deal.type</td>
+                    <td>@item.currency_exchange_rate.rate <span> </span> (@item.currency_exchange_rate.from  - @item.currency_exchange_rate.to)</td>
+                    <td>@item.total.tax_exclusive.amount <span> </span> @item.total.tax_exclusive.currency</td>
+                    <td>@item.total.tax_inclusive.amount <span> </span> @item.total.tax_inclusive.currency</td>
+                    <td>@item.total.taxes.FirstOrDefault().rate</td>
+                    <td>@item.total.taxes.FirstOrDefault().taxable.amount <span> </span> @item.total.taxes.FirstOrDefault().taxable.currency</td>
+                    <td>@item.total.taxes.FirstOrDefault().tax.amount <span> </span> @item.total.taxes.FirstOrDefault().tax.currency</td>
+                    <td>@item.total.purchase_price.amount <span> </span> @item.total.purchase_price.currency</td>
+                    <td>@item.status</td>
+                    <td>@item.created_at</td>
+                    <td class="text-center">
+                        <MudTooltip Text="Details" Placement="MudBlazor.Placement.Bottom">
+                            <MudFab Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" IconSize="MudBlazor.Size.Small" Class="ma-2" Icon="@Icons.Material.Filled.Visibility" OnClick="(()=>Details(item.id))" />
+                        </MudTooltip>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private string currentLoggedInUserName;
+    private string currentLoggedInUserFullName;
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+    private bool IsLoading = true;
+    private CommonServiceResult<QuotationListResponseDTO> models = new CommonServiceResult<QuotationListResponseDTO>();
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentLoggedInUserName = user.Identity.Name;
+            claims = user.Claims;
+            var userDetails = await _userManager.FindByNameAsync(currentLoggedInUserName);
+            var userInfo = await _IApplicationUserRepository.GetUserInfo(userDetails.Id);
+            currentLoggedInUserFullName = $"{userInfo.FirstName} {userInfo.LastName}";
+        }
+        else
+        {
+            currentLoggedInUserName = "UnKnown";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        models = await _IQuotationRepository.GetAll();
+        IsLoading = false;
+    }
+
+    private void Details(string id)
+    {
+        _NavigationManager.NavigateTo($"/quotation/details/{id}");
+    }
+}

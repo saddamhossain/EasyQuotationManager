@@ -1,0 +1,103 @@
+﻿@page "/products/details/{Id}"
+@attribute [Authorize]
+
+<PageTitle Title="Product Details" />
+<MudText Typo="Typo.h5" Color="MudBlazor.Color.Primary" Class="mb-4">Product Details</MudText>
+
+@if (IsLoading)
+{
+    <Loading />
+}
+else
+{
+    <div class="row">
+        <div class="col-sm-12">
+            <table class="table table-responsive">
+                <tr>
+                    <td class="table_header">Product Name</td>
+                    <td> @models.Data.data.name</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Code</td>
+                    <td> @models.Data.data.code</td>
+                </tr>
+                <tr>
+                    <td class="table_header">Description</td>
+                    <td> @models.Data.data.description</td>
+                </tr>
+
+                <tr>
+                    <td class="table_header">Purchase Price</td>
+                    <td>
+                        @if (models.Data.data.purchase_price == null)
+                        {
+                            <span> No price available </span>
+                        }
+                        else
+                        {
+                            @models.Data.data.purchase_price.amount <span> </span> @models.Data.data.purchase_price.currency
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td class="table_header">Selling Price</td>
+
+                    <td>
+                        @if (models.Data.data.purchase_price == null)
+                        {
+                            <span> No price available </span>
+                        }
+                        else
+                        {
+                            @models.Data.data.selling_price.amount <span> </span> @models.Data.data.selling_price.currency
+                        }
+                    </td>
+                </tr>
+
+            </table>
+        </div>
+    </div>
+    <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.List" Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" @onclick="BackToList">Back To List</MudButton>
+}
+
+@code {
+    private string currentLoggedInUserName;
+    private string currentLoggedInUserFullName;
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+
+    [Parameter]
+    public string Id { set; get; }
+    private CommonServiceResult<ProductDetailsResponseDTO> models = new CommonServiceResult<ProductDetailsResponseDTO>();
+    private bool IsLoading = true;
+
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentLoggedInUserName = user.Identity.Name;
+            claims = user.Claims;
+            var userDetails = await _userManager.FindByNameAsync(currentLoggedInUserName);
+            var userInfo = await _IApplicationUserRepository.GetUserInfo(userDetails.Id);
+            currentLoggedInUserFullName = $"{userInfo.FirstName} {userInfo.LastName}";
+        }
+        else
+        {
+            currentLoggedInUserName = "UnKnown";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        models = await _IProductRepository.Get(Id);
+        IsLoading = false;
+    }
+
+    private void BackToList()
+    {
+        _NavigationManager.NavigateTo("/products/index");
+    }
+}

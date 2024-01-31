@@ -1,0 +1,25 @@
+﻿@page "/authorize"
+@attribute [Authorize]
+
+<PageTitle Title="Teamleader Authorize" />
+<MudText Typo="Typo.h5" Color="MudBlazor.Color.Primary" Class="mb-4">Teamleader Authorization</MudText>
+
+<div class="row">
+    <div class="col-md-4">
+        <MudButton ButtonType="MudBlazor.ButtonType.Button" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.MenuOpen" Size="MudBlazor.Size.Small" Color="MudBlazor.Color.Primary" @onclick="AuthorizeTeamleader"> Authorize Teamleader</MudButton>
+    </div>
+</div>
+
+@code {
+    public void AuthorizeTeamleader()
+    {
+        var body = new
+        {
+            client_id = @_IConfiguration["Teamleader:client_id"],
+            response_type = @_IConfiguration["Teamleader:response_type"],
+            redirect_uri = @_IConfiguration["Teamleader:redirect_uri"]
+        };
+        var url = $"https://focus.teamleader.eu/oauth2/authorize?client_id={body.client_id}&response_type={body.response_type}&redirect_uri={body.redirect_uri}";
+        _NavigationManager.NavigateTo(url);
+    }
+}

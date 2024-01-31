@@ -1,0 +1,14 @@
+﻿@inject NavigationManager NavigationManager
+<AuthorizeView>
+    <Authorized>
+        @context.User.Identity.Name
+        <span style="margin-left: 20px;"> </span>
+        <form method="post" action="Identity/Account/LogOut">
+            <button type="submit" class="btn btn-info">Log out</button>
+        </form>
+    </Authorized>
+    <NotAuthorized>
+        <a class="btn btn-info" href="Identity/Account/Register">Register</a>&nbsp;
+        <a class="btn btn-info" href="Identity/Account/Login">Log in</a>
+    </NotAuthorized>
+</AuthorizeView>

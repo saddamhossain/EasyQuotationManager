@@ -1,0 +1,37 @@
+﻿@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor httpContextAccessor
+<AuthorizeView>
+    <Authorized>
+        <MudCard Elevation="0" Square="true" Class="@Class">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudAvatar Color="Color.Secondary">
+                        <MudIcon Icon="@Icons.Material.Filled.PersonOutline" />
+                    </MudAvatar>
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.body2">@context.User.Identity.Name </MudText>
+                    <MudText Typo="Typo.caption"> Role: @User_Role </MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+        </MudCard>
+    </Authorized>
+</AuthorizeView>
+
+
+
+@code{
+    [Parameter]
+    public string Class { get; set; }
+    private string User_Role { set; get; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await authenticationStateTask).User;
+        User_Role = httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value;
+        await base.OnInitializedAsync();
+    }
+}

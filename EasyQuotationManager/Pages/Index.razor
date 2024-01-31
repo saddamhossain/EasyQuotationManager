@@ -1,0 +1,65 @@
+﻿@page "/"
+@attribute [AllowAnonymous]
+
+<PageTitle Title="Home" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-5">
+    <MudGrid>
+        <MudItem xs="12" sm="12" md="12" lg="12">
+            <MudCard Outlined="true">
+                <MudCardContent>
+                    <AuthorizeView>
+                        <NotAuthorized>
+                            <MudText Typo="Typo.h4" GutterBottom="true">Welcome to Easy Quotation Manager! </MudText>
+
+                            <MudCarousel Style="height:650px;" ShowArrows="@arrows" ShowDelimiters="@delimiters" AutoCycle="@autocycle" TData="object">
+
+                                <MudCarouselItem Transition="transition" Color="MudBlazor.Color.Primary">
+                                    <div class="d-flex" style="height:100%">
+                                        <MudIcon Class="mx-auto my-auto" Icon="@Icons.Custom.Brands.Microsoft" Size="MudBlazor.Size.Large" />
+                                    </div>
+                                </MudCarouselItem>
+
+                                <MudCarouselItem Transition="transition" Color="MudBlazor.Color.Secondary">
+                                    <div class="d-flex" style="height:100%">
+                                        <MudIcon Class="mx-auto my-auto" Icon="@Icons.Custom.Brands.MicrosoftAzure" Size="MudBlazor.Size.Large" />
+                                    </div>
+                                </MudCarouselItem>
+
+                                <MudCarouselItem Transition="transition" Color="MudBlazor.Color.Warning">
+                                    <div class="d-flex" style="height:100%">
+                                        <MudIcon Class="mx-auto my-auto" Icon="@Icons.Custom.Brands.MicrosoftVisualStudio" Size="MudBlazor.Size.Large" />
+                                    </div>
+                                </MudCarouselItem>
+
+                                <MudCarouselItem Transition="transition" Color="MudBlazor.Color.Info">
+                                    <div class="d-flex" style="height:100%">
+                                        <MudIcon Class="mx-auto my-auto" Icon="@Icons.Custom.Brands.MicrosoftWindows" Size="MudBlazor.Size.Large" />
+                                    </div>
+                                </MudCarouselItem>
+
+                                <MudCarouselItem Transition="transition">
+                                    <div class="d-flex" style="height:100%">
+                                        <MudIcon Class="mx-auto my-auto" Icon="@Icons.Custom.Brands.MudBlazor" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Large" />
+                                    </div>
+                                </MudCarouselItem>
+
+                            </MudCarousel>
+                        </NotAuthorized>
+
+                        <Authorized>
+                            <MudText Typo="Typo.h4" GutterBottom="true">Welcome to Easy Quotation Manager! </MudText>
+                        </Authorized>
+                    </AuthorizeView>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code{
+    private bool arrows = true;
+    private bool delimiters = true;
+    private bool autocycle = true;
+    private Transition transition = Transition.Slide;
+}

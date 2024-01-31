@@ -1,0 +1,84 @@
+﻿@page "/customers/company_type"
+@attribute [Authorize]
+
+<PageTitle Title="Company Type" />
+<MudText Typo="Typo.h5" Color="MudBlazor.Color.Primary" Class="mb-4">Company Type</MudText>
+
+@if (IsLoading)
+{
+    <Loading />
+}
+else if (!models.Data.data.Any())
+{
+    <RecordNotFoundMessage Message="No Records Found." />
+}
+else
+{
+    <table class="table table-responsive table-bordered">
+        <thead>
+            <tr>
+                <th> Name</th>
+                <th> Telephone</th>
+                <th> Email</th>
+                <th> Vat Number</th>
+                <th> Added Date</th>
+                <th class="text-center"> Action </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in models.Data.data)
+            {
+                <tr>
+                    <td>@item.name</td>
+                    <td>@item.telephones.FirstOrDefault()?.number</td>
+                    <td>@item.emails.FirstOrDefault()?.email</td>
+                    <td>@item.vat_number</td>
+                    <td>@item.added_at</td>
+                    <td class="text-center">
+                        <MudTooltip Text="Details" Placement="MudBlazor.Placement.Bottom">
+                            <MudFab Color="MudBlazor.Color.Info" Size="MudBlazor.Size.Small" IconSize="MudBlazor.Size.Small" Class="ma-2" Icon="@Icons.Material.Filled.Visibility" OnClick="(()=>Details(item.id))" />
+                        </MudTooltip>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private string currentLoggedInUserName;
+    private string currentLoggedInUserFullName;
+    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+    private bool IsLoading = true;
+    private CommonServiceResult<CompanyListResponseDTO> models = new CommonServiceResult<CompanyListResponseDTO>();
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentLoggedInUserName = user.Identity.Name;
+            claims = user.Claims;
+            var userDetails = await _userManager.FindByNameAsync(currentLoggedInUserName);
+            var userInfo = await _IApplicationUserRepository.GetUserInfo(userDetails.Id);
+            currentLoggedInUserFullName = $"{userInfo.FirstName} {userInfo.LastName}";
+        }
+        else
+        {
+            currentLoggedInUserName = "UnKnown";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        models = await _ICompanyRepository.GetAll();
+        IsLoading = false;
+    }
+
+    private void Details(string id)
+    {
+        _NavigationManager.NavigateTo($"/customers/company_type_details/{id}");
+    }
+}
